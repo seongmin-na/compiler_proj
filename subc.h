@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include <strings.h>
+#include <string.h>
 #include <stdlib.h>
 
 typedef struct id {
@@ -20,6 +21,6 @@ typedef struct id {
 /* For hash table */
 unsigned hash(char *name);
 id *enter(int tokenType, char *name, int length);
-void check_hash();
+void check_hash(); //my test code for check hash_table
 
 #endif

@@ -19,18 +19,49 @@
 /**************************************************************/
 
 #include "subc.h"
+#define KEYWORD 0
+#define ID 1
 /***************************************************************
 {Other useful code segments can be here.}
 ***************************************************************/
 int commentdepth=0;
+id * current_id;
+char type_name[10]; 
 %}
 
 letter		[A-Za-z_]
-%start AA BB
+alnum		[A-Za-z0-9_]
+digit		[0-9]
+whitespace	[ \n\t] 
+word 		[^ \t\n]+
+KeyOrID		{letter}{alnum}*	
+intger_const	([1-9]+{digit}*)|0|([1-9]+{digit}*)
+float_const	{digit}+\.{digit}*([eE][+-]?{digit}+)?
+comment_inc	"/*"
+comment_dec	"*/"
+comment_ignore [^^] 
+%start normal_mode comment_mode
 
 %%
-{letter}	{ }
 
+<normal_mode>{comment_inc}  {commentdepth++;BEGIN comment_mode;} /*enter comment mode*/
+<comment_mode>{comment_inc} {commentdepth++;} /*inc_comment depth*/
+<comment_mode>{comment_dec} {commentdepth--;
+			 if(commentdepth==0)BEGIN normal_mode;
+		} /* dec_comment depth, if comment depth=0 then enter normal_mode*/
+<comment_mode>{comment_ignore} {;} /*ignore comment*/
+<normal_mode>{KeyOrID}	{current_id=enter(ID,yytext,yyleng+1);
+		switch(current_id->tokenType){
+			case 0 : strcpy(type_name,"KEY");break;
+			case 1 : strcpy(type_name,"ID"); break;
+			} 
+			printf("%s	%s	%d\n",type_name, current_id->name, current_id->count);
+	} /*recognize KeyOrID*/
+<normal_mode>{intger_const}/".."	{printf("INT	%s	\n",yytext);} /*for recognizr .. operater */
+<normal_mode>"("|")"|"["|"]"|"{"|"}"|"->"|"."|","|".."|"!"|"~"|"++"|"--"|"*"|"/"|"%"|"+"|"-"|"<<"|">>"|"<"|"<="|">"|">="|"=="|"!="|"&"|"^"|"|"|"&&"|"||"|"?"|":"|";"|"="|"+="|"-="|"*="|"/="|"%="|"&="|"^="|"|="|"<<="|">>="	{printf("OP	%s	\n",yytext);} /*print OP*/
+<normal_mode>{intger_const}  {printf("INT	%s	\n",yytext);} /*print intger*/
+<normal_mode>{float_const} {printf("F	%s	\n",yytext);} /*print float*/
+<normal_mode>{whitespace} {;} /*ignore white space*/
 %%
 void initHash() 
 {
@@ -61,9 +92,9 @@ int main(int argc, char** argv)
 	}
 
 	initHash();
-
-	BEGIN AA;
+	BEGIN normal_mode;	
+//	check_hash(); //for check_hash
 	yylex ();
-
+//	check_hash(); //for check_hash
 	return 0;
 }
